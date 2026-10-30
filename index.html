@@ -46,7 +46,8 @@ if (usage.date !== today) {
   localStorage.setItem('cinemaAIUsage', JSON.stringify(usage));
 }
 
-document.getElementById('generate').addEventListener('click', () => {
+
+document.getElementById('generate').addEventListener('click', async () => {
   const file = input.files && input.files[0];
   const description = document.getElementById('motionPrompt').value.trim();
 
@@ -65,11 +66,20 @@ document.getElementById('generate').addEventListener('click', () => {
     return;
   }
 
-  usage.count++;
-  localStorage.setItem('cinemaAIUsage', JSON.stringify(usage));
+  const button = document.getElementById('generate');
+  button.disabled = true;
+  button.textContent = 'جاري إرسال الطلب...';
 
-  alert('اكتملت المحاولة رقم ' + usage.count + ' من 100. توليد الفيديو الحقيقي يحتاج ربط محرك AI خارجي.');
+  try {
+    alert('الوظيفة تحتاج رابط صورة عامة. لم نربط تخزين الصور بعد.');
+  } catch (error) {
+    alert('حدث خطأ: ' + error.message);
+  } finally {
+    button.disabled = false;
+    button.textContent = 'توليد الفيديو';
+  }
 });
+
 </script>
 </body>
 </html>
