@@ -38,6 +38,31 @@ const input=document.getElementById('imageInput'), preview=document.getElementBy
 input.addEventListener('change',()=>{const file=input.files&&input.files[0];if(!file)return;if(!file.type.startsWith('image/')){alert('اختَر ملف صورة صالح.');return;}const reader=new FileReader();reader.onload=()=>{preview.src=reader.result;preview.hidden=false;promptBox.hidden=true;};reader.readAsDataURL(file);});
 drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();}});
 const DAILY_LIMIT = 100;
+  const SUPABASE_URL = 'https://rkleqbjkgonmuudanenn.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_kCO2XL_NIwhg48KsYqGpbw_6mqwQ8P1';
+const BUCKET_NAME = 'cinema-inputs';
+  async function uploadImage(file) {
+  const fileName = Date.now() + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+
+  const response = await fetch(
+    `${SUPABASE_URL}/storage/v1/object/${BUCKET_NAME}/${fileName}`,
+    {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': file.type
+      },
+      body: file
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error('فشل رفع الصورة إلى التخزين');
+  }
+
+  return `${SUPABASE_URL}/storage/v1/object/public/${BUCKET_NAME}/${fileName}`;
+}
 const today = new Date().toLocaleDateString('en-CA');
 let usage = JSON.parse(localStorage.getItem('cinemaAIUsage') || '{}');
 
@@ -71,10 +96,41 @@ document.getElementById('generate').addEventListener('click', async () => {
   button.textContent = 'جاري إرسال الطلب...';
 
   try {
-    alert('الوظيفة تحتاج رابط صورة عامة. لم نربط تخزين الصور بعد.');
-  } catch (error) {
-    alert('حدث خطأ: ' + error.message);
-  } finally {
+  const imageUrl = await uploadImage(file);
+
+  const response = await fetch(
+    `${SUPABASE_URL}/functions/v1/bright-endpoint`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`
+      },
+      body: JSON.stringify({
+        imageUrl: imageUrl,
+        prompt: description
+      })
+    }
+  );
+
+  const result = await response.json();
+
+  if (!response.ok) {
+    throw new Error(result.error || 'فشل إرسال الطلب');
+  }
+
+  usage.count++;
+  localStorage.setItem('cinemaAIUsage', JSON.stringify(usage));
+
+  alert('تم إرسال طلب الفيديو بنجاح. رقم الطلب: ' + (result.request_id || 'تم الاستلام'));
+
+} catch (error) {
+  alert('حدث خطأ: ' + error.message);
+} finally {
+  button.disabled = false;
+  button.textContent = 'توليد الفيديو';
+}} finally {
     button.disabled = false;
     button.textContent = 'توليد الفيديو';
   }
