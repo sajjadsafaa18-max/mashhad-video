@@ -37,7 +37,41 @@
 const input=document.getElementById('imageInput'), preview=document.getElementById('preview'), promptBox=document.getElementById('uploadPrompt'), drop=document.getElementById('dropZone');
 input.addEventListener('change',()=>{const file=input.files&&input.files[0];if(!file)return;if(!file.type.startsWith('image/')){alert('اختَر ملف صورة صالح.');return;}const reader=new FileReader();reader.onload=()=>{preview.src=reader.result;preview.hidden=false;promptBox.hidden=true;};reader.readAsDataURL(file);});
 drop.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();input.click();}});
-document.getElementById('generate').addEventListener('click',()=>{const file=input.files&&input.files[0],description=document.getElementById('motionPrompt').value.trim();if(!file){alert('ارفع صورة أولاً.');return;}if(!description){alert('اكتب وصف الحركة أولاً.');return;}alert('تم تجهيز طلبك تجريبياً. لتوليد ملف فيديو حقيقي، نحتاج الآن ربط محرك توليد AI خارجي.');});
+const DAILY_LIMIT = 100;
+const today = new Date().toLocaleDateString('en-CA');
+let usage = JSON.parse(localStorage.getItem('cinemaAIUsage') || '{}');
+
+if (usage.date !== today) {
+  usage = { date: today, count: 0 };
+  localStorage.setItem('cinemaAIUsage', JSON.stringify(usage));
+}
+
+document.getElementById('generate').addEventListener('click', () => {
+  const file = input.files && input.files[0];
+  const description = document.getElementById('motionPrompt').value.trim();
+
+  if (!file) {
+    alert('ارفع صورة أولاً.');
+    return;
+  }
+
+  if (!description) {
+    alert('اكتب وصف الحركة أولاً.');
+    return;
+  }
+
+  if (usage.count >= DAILY_LIMIT) {
+    alert('وصلت إلى 100 محاولة اليوم. ارجع باچر.');
+    return;
+  }
+
+  usage.count++;
+  localStorage.setItem('cinemaAIUsage', JSON.stringify(usage));
+
+  alert('اكتملت المحاولة رقم ' + usage.count + ' من 100. توليد الفيديو الحقيقي يحتاج ربط محرك AI خارجي.');
+});
 </script>
+</body>
+</html>
 </body>
 </html>
